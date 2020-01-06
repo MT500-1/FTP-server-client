@@ -1,0 +1,54 @@
+---
+
+  - name: FTP server Setup
+    become: yes
+    hosts: ftp_server
+    vars:
+      user_pass: $1$gxbxn6/7$DETrCHPa1bqGcUROftEaC1
+
+    tasks:
+
+      - name: Install Vsftpd
+        yum:
+          name: vsftpd
+          state: latest
+
+      - name: Create local user to test ftp server
+        user:
+          name: ftpuser
+          shell: /bin/bash
+          password: "{{ user_pass }}"
+         
+      - name: Copy /etc/vsftpd.conf
+        template:
+          src=vsftpd.conf.j2
+          dest=/etc/vsftpd/vsftpd.conf
+          owner=root
+          group=root
+
+      - name: Disable Selinux
+        shell: setenforce 0
+
+      - name: Start and Enable vsftpd
+        service:
+          name: vsftpd
+          enabled: yes
+          state: started
+          
+      - name: change firewall settings
+        firewalld:
+          service: ftp
+          permanent: yes
+          state: enabled
+          immediate: yes
+
+  - hosts: ftp_client
+    become: yes
+
+    tasks:
+
+      - name: Install FTP
+        yum:
+          name: ftp
+          state: latest
+
